@@ -5,7 +5,7 @@
  */
 package com.cice.dbpoolmanager;
 
-import com.mysql.jdbc.Connection;
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,7 +28,7 @@ public class DBPoolManager {
     public DBPoolManager() {
     }
 
-    public DBPoolManager(String host, String port, String user, String pass, String database, String url, DataSource dataSource) {
+    public DBPoolManager(String host, String port, String user, String pass, String database, String url) {
         this.host = host;
         this.port = port;
         this.user = user;
@@ -41,17 +41,20 @@ public class DBPoolManager {
         basicDataSource.setUsername(user);
         basicDataSource.setPassword(pass);
         basicDataSource.setUrl("jdbc:mysql://"+host+":"+port+ "/"+database);
+        basicDataSource.setInitialSize(5);
+        basicDataSource.setMaxActive(30);
 
         // Opcional. Sentencia SQL que le puede servir a BasicDataSource
         // para comprobar que la conexion es correcta.
         basicDataSource.setValidationQuery("select 1");
      
-        this.dataSource = dataSource;
+        this.dataSource = basicDataSource;
     }
     
     private Connection dbConnect() throws Exception {
         Connection connection;
         try {
+           
             connection = (Connection) dataSource.getConnection();
         } catch (SQLException ex) {
               throw new Exception("Se ha producido un error al conectar con la DB",ex);
@@ -91,9 +94,9 @@ public class DBPoolManager {
         try {
             
             Connection connection=dbConnect();
-            Statement st = connection.createStatement();
-            busqueda = st.executeQuery(sql);
-            st.close();
+             try (Statement st = connection.createStatement()) {
+                 busqueda = st.executeQuery(sql);
+             }
             dbCloseConnection(connection);
             
         } catch (Exception ex) {
